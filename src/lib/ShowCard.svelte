@@ -99,24 +99,26 @@
 				</Badges>
 			{/if}
 
-			<div class="bottom-row">
-				<FacePile
-				faces={[
-					{ name: 'Wes Bos', github: 'wesbos' },
-					{ name: 'Scott Tolinski', github: 'stolinski' },
-					...(show.guests || []).map((guest) => ({
-						name: guest.Guest.name,
-						github: guest.Guest.github || ''
-					}))
-				]}
-			/>
-		</div>
+			
+
 	</a>
+	<div class="bottom-row">
+		<FacePile
+		faces={[
+			{ name: 'Wes Bos', github: 'wesbos' },
+			{ name: 'Scott Tolinski', github: 'stolinski' },
+			...(show.guests || []).map((guest) => ({
+				name: guest.Guest.name,
+				github: guest.Guest.github || ''
+			}))
+		]}
+	/>
 	{#if display === 'highlight' || display === 'card'}
 		<div class="buttons">
 			<PlayButton show={show} display={display} />
 		</div>
 	{/if}
+	</div>
 </article>
 
 <style lang="postcss">
