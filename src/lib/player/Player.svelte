@@ -4,6 +4,24 @@
 	import get_show_path from '$utilities/slug';
 	import Icon from '../Icon.svelte';
 	import ShareButton from '../share/ShareButton.svelte';
+	import { onDestroy, onMount } from 'svelte';
+	import { MediaUIEvents } from 'media-chrome/dist/constants.js';
+
+	function play_show() {
+		if ($player.current_show) {
+			player.start_show($player.current_show, $player.currentTime);
+		}
+	}
+
+	onMount(() => {		
+		$player.media_controller?.addEventListener(MediaUIEvents.MEDIA_PLAY_REQUEST, play_show);
+		$player.media_controller?.addEventListener(MediaUIEvents.MEDIA_PAUSE_REQUEST, play_show);
+	});
+	
+	onDestroy(() => {
+		$player.media_controller?.removeEventListener(MediaUIEvents.MEDIA_PLAY_REQUEST, play_show);
+		$player.media_controller?.removeEventListener(MediaUIEvents.MEDIA_PAUSE_REQUEST, play_show);
+	});
 </script>
 
 <section class={`player ${$player_window_status}`}>
@@ -47,8 +65,8 @@
 									<Icon name="back-30" />
 								</span>
 							</media-seek-backward-button>
-							<media-play-button>
-								<span slot="play" style="--icon_size: 26px;">
+							<media-play-button aria-describedby="player_show_title">
+								<span slot="play"  style="--icon_size: 26px;">
 									<Icon name="play" />
 								</span>
 								<span slot="pause" style="--icon_size: 26px;">
@@ -140,7 +158,7 @@
 		right: 0;
 		display: flex;
 		padding: 5px 10px;
-		background-color: var(--player-bg, var(--black));
+		background-color: var(--player-bg, var(--blackcurrent_state));
 	}
 
 	media-time-range {

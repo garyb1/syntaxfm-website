@@ -1,20 +1,20 @@
 <script lang="ts">
-	import white_grit from '$assets/whitegrit.png';
 	import { player } from '$state/player';
 	import { format_show_type } from '$utilities/format_show_type';
-	import Icon from './Icon.svelte';
 	import { format } from 'date-fns';
 	import type { LatestShow } from '$server/ai/queries';
 	import Badge from './badges/Badge.svelte';
 	import Badges from './badges/Badges.svelte';
 	import FacePile from './FacePile.svelte';
 	import get_show_path from '$utilities/slug';
+	import PlayButton from './PlayButton.svelte';
 
 	export let show: LatestShow;
 	export let display: 'list' | 'card' | 'highlight' = 'card';
-
 	export let heading = 'h4';
 	export let show_date = new Date(show.date);
+	export const aria_key = `show${show.number}-description`;
+
 	function format_date(date: Date, baseDate: Date = new Date()) {
 		const timeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 		const diff = date.getTime() - baseDate.getTime();
@@ -30,7 +30,6 @@
 				return format(date, 'MMMM do, yyyy');
 		}
 	}
-	export const aria_key = `show${show.number}-description`;
 </script>
 
 <article class={display}>
@@ -40,13 +39,7 @@
 		aria-describedby={aria_key}
 	>
 		{#if display === 'list'}
-			<button
-				data-testid="play-show"
-				on:click|preventDefault={() => player.start_show(show)}
-				class="play-button"
-			>
-				<Icon name="play" />
-			</button>
+			<PlayButton show={show} display={display} hideLabel />
 		{/if}
 		<span style:--transition-name="show-date-{show.number}" class="show-number grit"
 			>{show.number}</span
@@ -65,6 +58,7 @@
 				this={heading}
 				data-testid="show-card-title"
 				class="h3 show-title"
+				id="{show.id}-title"
 				style:--transition-name="show-title-{show.number}"
 			>
 				<span class="spa-ran-wrap">
@@ -101,19 +95,13 @@
 					}))
 				]}
 			/>
-
-			{#if display === 'highlight' || display === 'card'}
-				<div class="buttons">
-					<button
-						data-testid="play-show"
-						class:play={display === 'highlight'}
-						on:click|preventDefault={() => player.start_show(show)}
-						><Icon name="play" /> Play #{show.number}</button
-					>
-				</div>
-			{/if}
 		</div>
 	</a>
+	{#if display === 'highlight' || display === 'card'}
+		<div class="buttons">
+			<PlayButton show={show} display={display} />
+		</div>
+	{/if}
 </article>
 
 <style lang="postcss">
@@ -129,7 +117,6 @@
 		align-items: start;
 		& a {
 			color: var(--fg);
-			display: block;
 			display: flex;
 			gap: 10px;
 			padding: 5px;
@@ -154,8 +141,6 @@
 		&.highlight {
 			--bg: var(--bg-root);
 			--fg: var(--fg-root);
-			/* background-image: linear-gradient(to top, #00000000, var(--bg)), url('$assets/whitegrit.png');
-       */
 
 			border-radius: var(--brad);
 			grid-column: 1 / -1;
@@ -199,17 +184,6 @@
 		@media (prefers-color-scheme: dark) {
 			background: var(--bg);
 		}
-	}
-
-	.play-button {
-		background: transparent;
-		border-radius: 50%;
-		align-self: center;
-		border-width: 1px;
-		padding: 10px;
-		box-shadow: inset 0 0 0 2px color-mix(in lch, var(--fg) 50%, transparent 94%);
-		color: var(--fg);
-
 	}
 
 	.show-number {

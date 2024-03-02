@@ -59,7 +59,7 @@
 		box-shadow: inset 0 0 0 var(--button-border-size) oklch(var(--blacklch) / 0.2);
 	}
 
-	:is(button, .button).play {
+	:is(button, .button).highlight {
 		--button-bg: linear-gradient(to right, var(--success), var(--accent));
 		--button-fg: var(--black-8);
 		font-size: var(--font-size-md);

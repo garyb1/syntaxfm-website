@@ -9,10 +9,11 @@
 	import { theme } from '$state/theme';
 	import wait from 'waait';
 	import ShareWindow from '$lib/share/ShareWindow.svelte';
-	import { time_param_to_seconds } from '$/utilities/time_param_to_seconds.js';
 	import ShareButton from '$/lib/share/ShareButton.svelte';
+	import PlayButton from '$/lib/PlayButton.svelte';
+
 	export let data;
-	$: ({ show, time_start } = data);
+	$: ({ show } = data);
 
 	async function handleClick(e: Event) {
 		const { target } = e;
@@ -41,10 +42,6 @@
 			node.style.backgroundImage = newBg;
 		});
 	}
-
-	function play_show() {
-		player.start_show(show, time_param_to_seconds(time_start));
-	}
 </script>
 
 <header>
@@ -63,7 +60,7 @@
 		</span>
 	</p>
 
-	<h1 style:--transition-name="show-title-{show.number}">
+	<h1 style:--transition-name="show-title-{show.number}" id="{show.id}-title">
 		<span class="spa-ran-wrap">{show.title}</span>
 	</h1>
 	{#if show.aiShowNote?.description}
@@ -78,16 +75,7 @@
 <div class="show-actions-wrap">
 	<div class="show-actions zone" style="--bg: var(--black); --fg: var(--white);">
 		<div class="show-actions-flex">
-			<button on:click={play_show} data-testid="play-show">
-				<Icon
-					--icon_size="12px"
-					aria-hidden="true"
-					name="play{$player.current_show?.number === show.number && $player.status === 'PLAYING'
-						? 'ing'
-						: ''}"
-				/>
-				Play{$player.current_show?.number === show.number ? 'ing' : ''} Episode {show.number}
-			</button>
+			<PlayButton show={show} showEpisodeLabel />
 			<span>or</span>
 			<ListenLinks {show} />
 			<ShareButton {show} />

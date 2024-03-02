@@ -37,35 +37,36 @@
 
 	export let name: IconName;
 	export let title: string | boolean = '';
-	export let ariaHidden = true;
-	if (!title && title !== false) title = capitalize(name);
+	
+	$: if (!title && title !== false) title = capitalize(name);
 </script>
 
 {#if name === 'play'}
 	<svg
 		style="width: var(--icon_size, 16px);"
 		viewBox="0 0 8 10"
-		aria-hidden={ariaHidden}
 		fill="none"
 		xmlns="http://www.w3.org/2000/svg"
+		aria-hidden="true"
 	>
-		<title>{title}</title>
 		<path
 			d="M7.629 4.306C7.74306 4.38231 7.83655 4.48555 7.90121 4.6066C7.96586 4.72765 7.99968 4.86276 7.99968 5C7.99968 5.13723 7.96586 5.27235 7.90121 5.39339C7.83655 5.51444 7.74306 5.61769 7.629 5.694L1.228 9.871C0.695 10.218 0 9.825 0 9.176V0.823997C0 0.174997 0.695 -0.218003 1.228 0.128997L7.629 4.306Z"
 			fill="currentColor"
 		/>
 	</svg>
 {/if}
+
 {#if name === 'playing'}
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
 		style="width: var(--icon_size, 16px);"
 		viewBox="0 0 16 16"
 		class="playing"
+		aria-hidden="true"
 	>
-		<line x1="7.5" y1="1" x2="7.5" y2="15" stroke="#000000" stroke-width="2" />
-		<line x1="11.5" y1="1" x2="11.5" y2="15" stroke="#000000" stroke-width="2" />
-		<line x1="3.5" y1="1" x2="3.5" y2="15" stroke="#000000" stroke-width="2" />
+		<line x1="7.5" y1="1" x2="7.5" y2="15" stroke="currentColor" stroke-width="2" />
+		<line x1="11.5" y1="1" x2="11.5" y2="15" stroke="currentColor" stroke-width="2" />
+		<line x1="3.5" y1="1" x2="3.5" y2="15" stroke="currentColor" stroke-width="2" />
 	</svg>
 {/if}
 
@@ -75,6 +76,7 @@
 		viewBox="0 0 8 10"
 		fill="none"
 		xmlns="http://www.w3.org/2000/svg"
+		aria-hidden="true"
 	>
 		<title>{title}</title>
 		<path
@@ -515,6 +517,7 @@
 	svg {
 		height: var(--icon_size, 16px);
 	}
+
 	@keyframes pulse {
 		0% {
 			transform: scaleY(0.2);
@@ -539,5 +542,21 @@
 	}
 	.playing line:nth-child(3) {
 		animation-delay: 0.4s;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.playing line {
+			animation-duration: 0.1ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.1ms !important;
+		}
+
+		.playing line:nth-child(2) {
+			transform: scaleY(0.4);
+		}
+
+		.playing line:nth-child(3) {
+			transform: scaleY(0.4);
+		}
 	}
 </style>

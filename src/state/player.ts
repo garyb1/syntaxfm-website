@@ -36,13 +36,20 @@ function loadMediaSession(show: Show) {
 	});
 }
 
+export enum PLAYER_STATUS {
+	INITIAL = 'INITIAL',
+	LOADED = 'LOADED',
+	PAUSED = 'PAUSED',
+	PLAYING = 'PLAYING'
+}
+
 interface PlayerState {
 	current_show: null | Show;
 	playing: boolean;
 	currentTime: number;
 	audio?: HTMLAudioElement;
 	media_controller?: HTMLAudioElement;
-	status: 'INITIAL' | 'LOADED' | 'PAUSED' | 'PLAYING';
+	status: PLAYER_STATUS;
 }
 
 // Having this state in the same writeable was causing hiccups ins the audio when updating the store
@@ -51,7 +58,7 @@ export const episode_share_status = writable<boolean>(false);
 
 const reset_state = {
 	playing: false,
-	status: 'INITIAL'
+	status: PLAYER_STATUS.INITIAL
 } as const;
 
 const new_player_state = () => {
@@ -61,7 +68,7 @@ const new_player_state = () => {
 		audio: undefined,
 		media_controller: undefined,
 		currentTime: 0,
-		status: 'INITIAL'
+		status: PLAYER_STATUS.INITIAL
 	});
 	const { update, subscribe, set } = player_state;
 
@@ -71,10 +78,10 @@ const new_player_state = () => {
 		if (show.url !== current_state?.audio?.src) {
 			return initialize_audio(show, start_time);
 		} else {
-			if (current_state.status === 'PLAYING') {
+			if (current_state.status === PLAYER_STATUS.PLAYING) {
 				return pause();
-			} else if (current_state.status === 'PAUSED') {
-				return play();
+			} else if (current_state.status === PLAYER_STATUS.PAUSED) {
+				return play(start_time);
 			} else {
 				return initialize_audio(show, start_time);
 			}
@@ -86,7 +93,7 @@ const new_player_state = () => {
 			loadMediaSession(show);
 			update((state) => {
 				state.current_show = show;
-				state.status = 'LOADED';
+				state.status = PLAYER_STATUS.LOADED;
 				if (state.audio) {
 					pause();
 
@@ -115,7 +122,7 @@ const new_player_state = () => {
 				if (time_stamp && state.audio) state.audio.currentTime = time_stamp;
 			});
 			state.currentTime = time_stamp;
-			state.status = 'PLAYING';
+			state.status = PLAYER_STATUS.PLAYING;
 			return state;
 		});
 	}
@@ -123,7 +130,7 @@ const new_player_state = () => {
 	function pause() {
 		update((state) => {
 			state?.audio?.pause();
-			state.status = 'PAUSED';
+			state.status = PLAYER_STATUS.PAUSED;
 			return state;
 		});
 	}
@@ -182,7 +189,7 @@ const new_player_state = () => {
 			state.current_show = null;
 			state.playing = false;
 			state.currentTime = 0;
-			state.status = 'INITIAL';
+			state.status = PLAYER_STATUS.INITIAL;
 
 			return state;
 		});
