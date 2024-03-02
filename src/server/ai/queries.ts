@@ -1,5 +1,5 @@
 import { PER_PAGE } from '$const';
-import { Prisma, $Enums } from '@prisma/client';
+import { $Enums, Prisma } from '@prisma/client';
 
 export const transcript_with_utterances = Prisma.validator<Prisma.TranscriptDefaultArgs>()({
 	include: {
@@ -11,6 +11,22 @@ export const transcript_with_utterances = Prisma.validator<Prisma.TranscriptDefa
 				start: 'asc'
 			}
 		}
+	}
+});
+
+export const transcript_without_ai_notes_query = Prisma.validator<Prisma.ShowFindFirstArgs>()({
+	where: {
+		// Where there is no AI Show Note, and there is a transcript
+		aiShowNote: null,
+		transcript: {
+			isNot: null
+		}
+	},
+	include: {
+		transcript: transcript_with_utterances
+	},
+	orderBy: {
+		number: 'desc'
 	}
 });
 
@@ -37,6 +53,7 @@ type SummaryItem = {
 type Link = {
 	name: string;
 	url: string;
+	timestamp: string;
 };
 
 type SpeakerTime = {

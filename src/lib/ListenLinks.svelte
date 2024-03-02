@@ -7,12 +7,24 @@
 <a
 	class="icon"
 	target="_blank"
-	title="Listen on Spotify"
+	title="Watch or Listen on Spotify"
 	aria-label="Spotify"
 	href="https://open.spotify.com/search/syntax.fm {encodeURI(show.title)}/episodes"
 >
 	<Icon name="spotify" />
 </a>
+{#if show.youtube_url}
+	<a
+		class="icon"
+		target="_blank"
+		title="Watch on Youtube"
+		aria-label="Youtube"
+		style:--fg="#F61C0D"
+		href={show.youtube_url}
+	>
+		<Icon name="youtube" />
+	</a>
+{/if}
 <a
 	class="icon"
 	title="Listen on Apple Podcasts"

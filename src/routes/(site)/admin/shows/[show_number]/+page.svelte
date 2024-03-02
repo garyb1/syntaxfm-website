@@ -5,11 +5,15 @@
 	$: ({ show } = data);
 </script>
 
-{#if show?.aiShowNote}
-	<h2>AI Show Notes</h2>
-	<Dump data={show?.aiShowNote} />
+<h1 class="h4">DB dump</h1>
+<p>This is the data that is currently in the DB. No caches.</p>
+{#if show}
+	<Dump data={show} />
 {/if}
-{#if show?.transcript}
-	<h2>Transcript</h2>
-	<!-- <Transcript transcript={show?.transcript} /> -->
+<h1 class="h4">AI Show Notes</h1>
+
+{#if show?.aiShowNote}
+	<Dump data={show?.aiShowNote} />
+{:else}
+	<p>Notes not available</p>
 {/if}

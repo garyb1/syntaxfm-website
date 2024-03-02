@@ -1,15 +1,29 @@
 <script lang="ts">
-	import { player } from '$state/player';
 	import { format_show_type } from '$utilities/format_show_type';
+	import get_show_path from '$utilities/slug';
+	import type { Show } from '@prisma/client';
 	import { format } from 'date-fns';
-	import type { LatestShow } from '$server/ai/queries';
+	import FacePile from './FacePile.svelte';
 	import Badge from './badges/Badge.svelte';
 	import Badges from './badges/Badges.svelte';
-	import FacePile from './FacePile.svelte';
-	import get_show_path from '$utilities/slug';
 	import PlayButton from './PlayButton.svelte';
 
-	export let show: LatestShow;
+	// Scott - I hand wrote this type to be exactly what this component needs. Lots of TS errors
+	// Due to what generated type we're asking to satisfy here
+	export let show: Show & {
+		aiShowNote?: {
+			description?: string;
+			topics?: {
+				name: string;
+			}[];
+		} | null;
+		guests?: {
+			Guest: {
+				name: string;
+				github: string | null;
+			};
+		}[];
+	};
 	export let display: 'list' | 'card' | 'highlight' = 'card';
 	export let heading = 'h4';
 	export let show_date = new Date(show.date);
@@ -67,11 +81,11 @@
 			</svelte:element>
 
 			{#if show.aiShowNote?.description}
-				<p id={aria_key} class="description text-sm">{show.aiShowNote?.description}</p>
+				<p id={aria_key} class="description text-sm"><span>{show.aiShowNote?.description}</span></p>
 			{:else}
 				{@const description = show.show_notes?.match(/(.*?)(?=## )/s)?.[0]}
 				<p id={aria_key} class="description text-sm">
-					{description}
+					<span>{description}</span>
 				</p>
 			{/if}
 
@@ -85,7 +99,8 @@
 				</Badges>
 			{/if}
 
-			<FacePile
+			<div class="bottom-row">
+				<FacePile
 				faces={[
 					{ name: 'Wes Bos', github: 'wesbos' },
 					{ name: 'Scott Tolinski', github: 'stolinski' },
@@ -106,7 +121,7 @@
 
 <style lang="postcss">
 	article {
-		--bg: var(--bg-sheet);
+		--bg: var(--bg-1);
 		container: show-card / inline-size;
 		display: grid;
 		padding: 20px;
@@ -119,11 +134,13 @@
 			color: var(--fg);
 			display: flex;
 			gap: 10px;
-			padding: 5px;
+			height: 100%;
 		}
 
 		.details {
 			display: grid;
+			flex-grow: 1;
+			grid-template-rows: auto auto 1fr auto auto;
 			gap: 1rem;
 			& > * {
 				margin: 0;
@@ -150,21 +167,50 @@
 			border: solid var(--border-size) var(--black-8);
 		}
 
+		
 		&.list {
 			border: solid 1px var(--subtle);
 			margin-bottom: 20px;
 			padding: 20px 0;
 			margin-inline: auto;
-			@media (--below_med) {
-				.description {
-					display: none;
-				}
-				h2 {
-					mask-image: none;
-					font-style: normal;
-				}
+		}
+
+		.description {
+			span {
+				/* helps a11y when light text overlaps show number */
+				background-color: color-mix(in lch, var(--bg), transparent 50%);				
 			}
 		}
+
+		/* readability improvements for mobile viewports */
+		@media (--below_med) {
+			padding: 10px;
+
+			.details {
+				/* since we're hiding the description row at these dimensions (which was 100% height), 
+				   need a new row to become 100% height -- the show title */
+				grid-template-rows: auto 1fr auto auto;
+			}
+			.description {
+				display: none;
+				mask-image: none;
+			}
+		}
+
+		.bottom-row {
+			align-self: end;
+
+			/* lay out horizontally */
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 1rem;
+
+			.buttons {
+				text-align: right;
+				align-self: center;
+			}
+		}
+
 	}
 
 	.h3 {
@@ -173,6 +219,11 @@
 		font-weight: 600;
 		font-size: var(--font-size-lg);
 		line-height: 1.2;
+		text-shadow:
+			1px 0 0 var(--bg),
+			0 1px 0 var(--bg),
+			-1px 0 0 var(--bg),
+			0 -1px 0 var(--bg);
 	}
 
 	.date {
@@ -184,6 +235,18 @@
 		@media (prefers-color-scheme: dark) {
 			background: var(--bg);
 		}
+		/* adds contrast when light text overlaps show number */
+		text-shadow: 2px 1px 0px var(--bg);
+	}
+
+	.play-button {
+		background: transparent;
+		border-radius: 50%;
+		align-self: center;
+		border-width: 1px;
+		padding: 10px;
+		box-shadow: inset 0 0 0 2px color-mix(in lch, var(--fg) 50%, transparent 94%);
+		color: var(--fg);
 	}
 
 	.show-number {
@@ -201,6 +264,10 @@
 		color: var(--primary);
 		line-height: 1;
 		z-index: -1;
+
+		@media (--below_med) {
+			--max-font-size: 8rem;
+		}
 	}
 
 	@container show-card (width > 600px) {

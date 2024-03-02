@@ -1,7 +1,6 @@
 <script lang="ts">
-	import ShowCard from '$lib/ShowCard.svelte';
 	import PodcastHero from '$lib/PodcastHero.svelte';
-	import NewsletterForm from '$lib/NewsletterForm.svelte';
+	import ShowCard from '$lib/ShowCard.svelte';
 
 	export let data;
 	$: ({ latest } = data);
@@ -32,20 +31,8 @@
 	</div>
 </section>
 
-<section class="zone layout full" style:--bg="var(--black)" style:--fg="var(--white)">
-	<div class="newsletter-container">
-		<NewsletterForm />
-	</div>
-</section>
-
 <style>
 	section {
 		margin-top: 5rem;
-	}
-
-	.newsletter-container {
-		border: solid var(--border-size) var(--white);
-		margin-top: 2rem;
-		border-radius: var(--brad);
 	}
 </style>

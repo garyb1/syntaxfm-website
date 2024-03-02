@@ -3,8 +3,9 @@
     import type { LatestShow } from '$server/ai/queries';
 	import { PLAYER_STATUS, player } from '$state/player';
 	import { capitalize } from "$/utilities/capitalize";
+	import type { Show } from "@prisma/client";
 
-    export let show: LatestShow | null;
+    export let show: Show | null;
     export let hideLabel: boolean = false;
 	export let display: 'list' | 'card' | 'highlight' | '' = '';
     export let showEpisodeLabel = false;

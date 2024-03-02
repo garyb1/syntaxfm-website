@@ -1,16 +1,17 @@
-import slug from 'speakingurl';
-import matter from 'gray-matter';
-import { prisma_client as prisma } from '../hooks.server';
-import { import_all_md_files_from_glob } from '$utilities/file_utilities/get_md_from_folder';
-import { get_hash_from_content } from '$utilities/file_utilities/get_hash_from_content';
-import { error } from '@sveltejs/kit';
 import { DAYS_OF_WEEK_TYPES } from '$const';
+import { get_hash_from_content } from '$utilities/file_utilities/get_hash_from_content';
+import { import_all_md_files_from_glob } from '$utilities/file_utilities/get_md_from_folder';
 import { left_pad } from '$utilities/left_pad';
+import { error } from '@sveltejs/kit';
+import matter from 'gray-matter';
+import slug from 'speakingurl';
+import { prisma_client as prisma } from '../hooks.server';
 
 interface FrontMatterGuest {
 	name: string;
 	twitter: string;
 	url: string;
+	youtube_url?: string;
 	social: string[];
 }
 
@@ -53,6 +54,7 @@ export async function import_or_update_all_changed_shows() {
 
 			// If show doesn't exist or the hash has changed. Refresh
 			if (!existing_show || existing_show.hash !== hash) {
+        console.log(`Refreshing Show # ${number}`);
 				await parse_and_save_show_notes(md_file_contents, hash, number, md_file_path);
 			}
 		}
@@ -97,7 +99,8 @@ export async function parse_and_save_show_notes(
 				slug: slug(data.title),
 				date,
 				number,
-				url: data.url,
+        url: data.url,
+				youtube_url: data.youtube_url,
 				show_notes: content,
 				hash: hash,
 				md_file,
@@ -110,6 +113,7 @@ export async function parse_and_save_show_notes(
 				title: data.title,
 				date,
 				url: data.url,
+				youtube_url: data.youtube_url,
 				show_notes: content,
 				hash: hash,
 				md_file,

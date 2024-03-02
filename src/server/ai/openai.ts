@@ -1,17 +1,12 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-// TODO remove this ts-nocheck. I've added this until this is more complete or confirmed to be complete
-import { Configuration, type CreateChatCompletionRequest, OpenAIApi } from 'openai';
-import { createCondensePrompt, summarizePrompt, summarizePrompt2 } from './prompts';
-import {
-	SlimUtterance,
-	TranscribedShow,
-	formatAsTranscript,
-	getSlimUtterances
-} from '$server/transcripts/utils';
-import { encode } from 'gpt-3-encoder';
-import wait from 'waait';
+import { formatAsTranscript, getSlimUtterances } from '$server/transcripts/utils';
 import type { Prisma } from '@prisma/client';
+import { encode } from 'gpt-3-encoder';
+import { Configuration, OpenAIApi, type CreateChatCompletionRequest } from 'openai';
+import wait from 'waait';
+import { anthropic_completion, convert_openai_to_anthropic } from './anthropic';
+import { createCondensePrompt, summarizePrompt, summarizePrompt2 } from './prompts';
+import type { AIPodcastSummaryResponse, transcript_without_ai_notes_query } from './queries';
+import type { SlimUtterance, TranscribedShow } from '../transcripts/types';
 
 export const TOKEN_LIMIT = 7000;
 export const COMPLETION_TOKEN_IDEAL = 1500; // how many tokens we should reserve to the completion - otherwise the responses are poor quality
@@ -23,8 +18,6 @@ export const CONDENSE_THRESHOLD = 100;
 const configuration = new Configuration({
 	apiKey: process.env.OPENAI_API_KEY
 });
-import type { AINoteSelect, AIPodcastSummaryResponse } from './queries';
-import { anthropic_completion, convert_openai_to_anthropic } from './anthropic';
 export const openai = new OpenAIApi(configuration);
 
 export async function condense(
@@ -88,7 +81,7 @@ export async function condense(
 			if (condensed) {
 				utterance.condensedTranscript = condensed;
 			}
-			if (condensed.length > utterance.transcript.length) {
+			if (condensed && condensed.length > utterance.transcript.length) {
 				console.log(`Condensed transcript is longer than original transcript.
         Condensed: ${condensed}
         Original: ${utterance.transcript}
@@ -124,27 +117,14 @@ export async function condense(
 	return utterances;
 }
 
-type GenerateAINotesInput = {
-	transcript: Prisma.TranscriptGetPayload<{
-		include: {
-			utterances: {
-				include: {
-					transcript: true;
-					words: true;
-				};
-			};
-		};
-	}>;
-	show: Prisma.ShowGetPayload<true>;
-};
-
 export async function generate_ai_notes(
-	show: Prisma.ShowGetPayload<{
-		select: AINoteSelect;
-	}>,
+	show: Prisma.ShowGetPayload<typeof transcript_without_ai_notes_query>,
 	provider: 'openai' | 'anthropic' = 'anthropic'
 ) {
-	const slimUtterance = getSlimUtterances(show.transcript?.utterances || [], show.number);
+	if (!show || !show.transcript?.utterances) {
+		throw new Error(`No transcript found for show ${show.number}`);
+	}
+	const slimUtterance = getSlimUtterances(show.transcript?.utterances, show.number);
 	const transcript = formatAsTranscript(slimUtterance);
 	// Condense
 	const slimUtterancesWithCondensed = await condense(
@@ -155,13 +135,11 @@ export async function generate_ai_notes(
 			utterances: slimUtterance
 		},
 		{
+			// anthropic doesnt need to condense
 			skip: provider === 'anthropic'
 		}
 	);
 	const condensedTranscript = formatAsTranscript(slimUtterancesWithCondensed);
-	const links = show.show_notes
-		.match(/\[([^\[]+)\](\(.*\))/g)
-		.filter((link) => link.includes('http'));
 
 	const input: CreateChatCompletionRequest = {
 		// model: 'gpt-4',
@@ -201,7 +179,7 @@ export async function generate_ai_notes(
 	const completion = await openai.createChatCompletion(input).catch((err) => {
 		console.dir(err.response.data.error, { depth: null });
 	});
-	const maybeJSON = completion.data.choices.at(0)?.message?.content;
+	const maybeJSON = completion?.data.choices.at(0)?.message?.content;
 	console.log(maybeJSON);
 	const parsed = JSON.parse(maybeJSON || '') as AIPodcastSummaryResponse;
 	return { ...parsed, provider: 'gpt3.5' };

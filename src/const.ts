@@ -1,11 +1,11 @@
 // * Constant variables
 // Things that won't be reassigned, although maybe more org needed here eventually
 
-export const DAYS_OF_WEEK_TYPES = {
+export const DAYS_OF_WEEK_TYPES: { [key: number]: 'HASTY' | 'TASTY' | 'SUPPER' | 'SPECIAL' } = {
 	1: 'HASTY', // Monday
 	3: 'TASTY', // Wednesday
 	5: 'SUPPER' // Friday
-} as const;
+};
 
 export const GITHUB_USER_URL = 'https://api.github.com/user';
 export const GITHUB_AUTH_URL = 'https://github.com/login/oauth/authorize';
@@ -24,6 +24,10 @@ export const PODCAST_LINKS = [
 	{
 		href: 'https://itunes.apple.com/ca/podcast/syntax-tasty-web-development-treats/id1253186678?mt=2',
 		text: 'Apple Podcasts'
+	},
+	{
+		href: 'https://www.youtube.com/@syntaxfm',
+		text: 'YouTube'
 	},
 	{
 		href: 'https://overcast.fm/itunes1253186678/syntax-tasty-web-development-treats',

@@ -1,17 +1,16 @@
 <script lang="ts">
-	import { format } from 'date-fns';
-	import { player } from '$state/player';
+	import { replace_color } from '$/lib/theme/variable_color_svg.js';
 	import { page } from '$app/stores';
 	import HostsAndGuests from '$lib/HostsAndGuests.svelte';
 	import Icon from '$lib/Icon.svelte';
 	import ListenLinks from '$lib/ListenLinks.svelte';
 	import Tabs from '$lib/Tabs.svelte';
-	import { theme } from '$state/theme';
-	import wait from 'waait';
+	import ShareButton from '$/lib/share/HairButton.svelte';
 	import ShareWindow from '$lib/share/ShareWindow.svelte';
-	import ShareButton from '$/lib/share/ShareButton.svelte';
 	import PlayButton from '$/lib/PlayButton.svelte';
-
+	import { player } from '$state/player';
+	import { format } from 'date-fns';
+	
 	export let data;
 	$: ({ show } = data);
 
@@ -29,18 +28,8 @@
 		}
 	}
 
-	function variableColorSvg(node: HTMLElement) {
-		theme.subscribe(async () => {
-			await wait(1);
-			const style = getComputedStyle(node);
-			const bg = style.getPropertyValue('background-image');
-			const primary = style.getPropertyValue('--primary');
-			const newBg = bg.replaceAll(
-				/fill\s*=\s*['"].*?['"]/gi,
-				`fill='${encodeURIComponent(primary)}'`
-			);
-			node.style.backgroundImage = newBg;
-		});
+	function variable_svg(node: HTMLElement) {
+		replace_color(node);
 	}
 </script>
 
@@ -63,8 +52,9 @@
 	<h1 style:--transition-name="show-title-{show.number}" id="{show.id}-title">
 		<span class="spa-ran-wrap">{show.title}</span>
 	</h1>
+
 	{#if show.aiShowNote?.description}
-		<p class="description">{show.aiShowNote?.description}</p>
+		<p class="description"><span>{show.aiShowNote?.description}</span></p>
 	{/if}
 </header>
 
@@ -73,7 +63,7 @@
 </div>
 
 <div class="show-actions-wrap">
-	<div class="show-actions zone" style="--bg: var(--black); --fg: var(--white);">
+	<div class="show-actions zone" style="--fg: var(--fg-root);">
 		<div class="show-actions-flex">
 			<PlayButton show={show} showEpisodeLabel />
 			<span>or</span>
@@ -93,7 +83,7 @@
 				<Icon name="edit" /></a
 			>
 		</div>
-		<div use:variableColorSvg class="waves grit" />
+		<div use:variable_svg class="variable-color-svg waves grit" />
 	</div>
 </div>
 
@@ -132,6 +122,16 @@
 			view-transition-name: var(--transition-name);
 			margin-top: 0;
 			font-size: var(--font-size-xxl);
+			text-shadow:
+				1px 0 0 var(--bg),
+				0 1px 0 var(--bg),
+				-1px 0 0 var(--bg),
+				0 -1px 0 var(--bg);
+		}
+
+		.description span {
+			/* helps a11y when light text overlaps show number */
+			background-color: color-mix(in lch, var(--bg), transparent 50%);
 		}
 
 		.show-actions-wrap {
@@ -139,8 +139,9 @@
 		}
 
 		.show-actions {
-			background: var(--black-9);
-			color: var(--white);
+			background: var(--bg-root);
+			color: var(--fg-root);
+			/* color: color-mix(as lch, var(--bg-sheet), transparent 50%); */
 			width: 110%;
 			left: -5%;
 			overflow: hidden;

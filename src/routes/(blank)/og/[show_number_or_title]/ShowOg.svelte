@@ -1,10 +1,11 @@
 <script lang="ts">
+	import type { LatestShow } from '$server/ai/queries';
 	import { format_show_type } from '$utilities/format_show_type';
 	import { format } from 'date-fns';
-	import type { LatestShow } from '$server/ai/queries';
-	import FacePile from './FacePile.svelte';
-	import wait from 'waait';
-	export let show: LatestShow;
+	import { tick } from 'svelte';
+	import FacePile from '../../../../lib/FacePile.svelte';
+
+	export let show: LatestShow & { isPage?: boolean };
 	export let show_date = show.date ? new Date(show.date) : null;
 
 	function fitText(node: HTMLHeadElement) {
@@ -23,8 +24,9 @@
 		let increment = 0.1;
 		node.style.fontSize = `${fontSize}cqw`;
 
-		async function sizeText() {
-			await wait(0); //
+		function sizeText() {
+			// We use tick here instead of await wait(), same technique, no async required since the action was complaining about returning a promise
+			tick();
 			node.style.fontSize = `${fontSize}cqw`;
 			const lineHeight = parseInt(getComputedStyle(node).lineHeight, 10);
 			const height = node.offsetHeight;
@@ -57,9 +59,9 @@
 	}
 </script>
 
-<article class="grit" style="--title-length: {show.title.length}">
+<article style="--title-length: {show.title.length}">
 	{#if show.number}
-		<span class="show-number">{show.number}</span>
+		<span class="grit show-number">{show.number}</span>
 	{/if}
 
 	<div class="details">
@@ -81,7 +83,7 @@
 
 		<div class="brand-footer">
 			<FacePile
-				size="80px"
+				size="120px"
 				faces={[
 					{ name: 'Wes Bos', github: 'wesbos' },
 					{ name: 'Scott Tolinski', github: 'stolinski' },
@@ -91,7 +93,7 @@
 					}))
 				]}
 			/>
-			<div class="logos">
+			<div class="grit logos">
 				<svg height="100px" viewBox="0 0 1371 1212" fill="none" xmlns="http://www.w3.org/2000/svg">
 					<title>Syntax</title>
 					<path
@@ -148,8 +150,14 @@
 		width: 100%;
 		font-style: italic;
 		transform: rotate(-1deg);
-		/* align-self: end; */
 		text-align: center;
+
+		/* black text outline in case white h1 text goes over yellow show number */
+		text-shadow:
+			2px 0 0 black,
+			0 2px 0 black,
+			-2px 0 0 black,
+			0 -2px 0 black;
 	}
 
 	.date {
@@ -186,6 +194,7 @@
 		gap: 5rem;
 		justify-content: center;
 		align-items: center;
+		margin-bottom: 4rem;
 	}
 	.logos {
 		bottom: 10px;

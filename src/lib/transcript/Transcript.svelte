@@ -1,19 +1,19 @@
 <script lang="ts">
 	import { getSlimUtterances } from '$server/transcripts/utils';
+	import { player } from '$state/player';
 	import format_time, { tsToS } from '$utilities/format_time';
 	import 'core-js/full/map/group-by';
 	import slug from 'speakingurl';
-	import { player } from '$state/player';
 	import Squiggle from './Squiggle.svelte';
 	import TableOfContents from './TableOfContents.svelte';
 
-	import type { SlimUtterance } from '$server/transcripts/types';
 	import type { AINoteWithFriends, TranscriptWithUtterances } from '$server/ai/queries';
+	import type { SlimUtterance } from '$server/transcripts/types';
+	import type { Utterance } from '@deepgram/sdk/dist/types';
 	import type { Show } from '@prisma/client';
 
 	export let transcript: TranscriptWithUtterances;
-	export let aiShowNote: AINoteWithFriends;
-
+	export let aiShowNote: AINoteWithFriends | null;
 	export let show: Show;
 
 	const slim_transcript: SlimUtterance[] = getSlimUtterances(transcript.utterances, 1)
@@ -28,19 +28,24 @@
 			return true;
 		});
 	// group Utterances by their summary
-	const def = { time: '00:00', text: '' };
-	type TopicSummary = (typeof aiShowNote.summary)[0];
+	type SummaryTitle = { time: string; text: string; id?: number };
+	const def: SummaryTitle = { time: '00:00', text: '' };
+	// TODO: This is a type for Map.groupBy(). We can remove this once TypeScript ships the types for it
+	type UtteranceMap = Map<typeof def, SlimUtterance[]>;
 
-	const utterances_by_summary: Map = Map.groupBy(slim_transcript, (utterance) => {
-		const start = utterance.start;
-		const summary = aiShowNote?.summary?.findLast((summary, i) => {
-			const nextSummary = aiShowNote?.summary?.at(i + 1);
-			const end = nextSummary ? tsToS(nextSummary.time) : Infinity;
-			const timestamp = tsToS(summary.time);
-			return start >= timestamp;
-		});
-		return summary || def;
-	});
+	const utterances_by_summary: UtteranceMap = Map.groupBy(
+		slim_transcript,
+		(utterance: Utterance) => {
+			const start = utterance.start;
+			const summary = aiShowNote?.summary?.findLast((summary, i) => {
+				const nextSummary = aiShowNote?.summary?.at(i + 1);
+				const end = nextSummary ? tsToS(nextSummary.time) : Infinity;
+				const timestamp = tsToS(summary.time);
+				return start >= timestamp;
+			});
+			return summary || def;
+		}
+	);
 
 	$: currentUtterance = slim_transcript.find((utterance, index) => {
 		const nextUtteranceStart = slim_transcript[index + 1]?.start || utterance.end;
@@ -48,7 +53,7 @@
 	});
 
 	$: currentTopic = aiShowNote?.summary.find((summary, index) => {
-		const nextSummary = aiShowNote.summary[index + 1];
+		const nextSummary = aiShowNote?.summary[index + 1];
 		const topicEnd = nextSummary ? tsToS(nextSummary.time) : Infinity;
 		const topicStart = tsToS(summary.time);
 		return $player.currentTime >= topicStart && $player.currentTime <= topicEnd;
@@ -86,7 +91,7 @@
 			return 'future';
 		}
 	};
-	$: placeTopic = function (summary: TopicSummary, utterances: SlimUtterance[]) {
+	$: placeTopic = function (summary: SummaryTitle, utterances: SlimUtterance[]) {
 		const summaryEnd = utterances.at(-1)?.end || Infinity;
 		if (!playing_show_is_this_show) return ''; // not playing this show
 		if (currentTopic?.id === summary.id) {
@@ -99,17 +104,17 @@
 	};
 </script>
 
-<TableOfContents {aiShowNote} />
+{#if aiShowNote}
+	<TableOfContents {aiShowNote} />
+{/if}
 
 <div class="timeline">
 	{#each Array.from(utterances_by_summary) as [summary, utterances], i}
 		<section>
 			<header class="topic {placeTopic(summary, utterances)}">
-				<div class="gutter">
-					<div id={slug(summary.text)}>
-						<strong>Topic {i}</strong>
-						<span>{summary.time}</span>
-					</div>
+				<div class="gutter" id={slug(summary.text)}>
+					<strong>Topic {i}</strong>
+					<span>{summary.time}</span>
 				</div>
 				<div class="marker">
 					<Squiggle top={true} />
@@ -131,18 +136,16 @@
 						class="utterance {labelUtterance(utterance)}"
 					>
 						<div class="gutter">
-							<div>
-								<button
-									class="button-nunya"
-									on:click={async () => {
-										await player.start_show(show);
-										$player.currentTime = utterance.start;
-									}}>{format_time(utterance.start)}</button
-								>
-								<p class="speaker">
-									{utterance.speaker || `Guest ${utterance.speakerId}`}
-								</p>
-							</div>
+							<button
+								class="button-nunya"
+								on:click={async () => {
+									await player.start_show(show);
+									$player.currentTime = utterance.start;
+								}}>{format_time(utterance.start)}</button
+							>
+							<p class="speaker">
+								{utterance.speakerName || `Guest ${utterance.speakerId}`}
+							</p>
 						</div>
 						<div class="marker">
 							<span class="dot"></span>
@@ -209,8 +212,19 @@
 		position: relative;
 		display: grid;
 		grid-template-columns: 120px auto 1fr;
-		gap: 20px;
+		gap: 0 20px;
 		font-size: var(--font-size-xs);
+		@media (--below_med) {
+			grid-template-columns: 67px 1fr;
+			grid-template-rows: auto auto;
+			.gutter {
+				grid-column: 2;
+			}
+			.marker {
+				grid-column: 1;
+				grid-row: 1 / -1;
+			}
+		}
 	}
 	.topic {
 		--vertical-spacing: 26px; /* must be in px for the SVG */
@@ -230,6 +244,17 @@
 		margin-bottom: var(--vertical-spacing);
 		.marker {
 			place-content: center;
+		}
+		@media (--below_med) {
+			grid-template-columns: var(--horizonal-spacing) 1fr;
+			grid-template-rows: auto auto;
+			.marker {
+				grid-column: 1;
+				grid-row: 1 / -1;
+			}
+			.gutter {
+				display: none;
+			}
 		}
 	}
 	h4 {
@@ -257,6 +282,13 @@
 		align-self: start;
 		text-align: right;
 		transform: translateX(-10px);
+		@media (--below_med) {
+			display: flex;
+			position: relative;
+			top: 0;
+			width: 100%;
+			justify-content: space-between;
+		}
 		p {
 			margin: 0;
 		}
